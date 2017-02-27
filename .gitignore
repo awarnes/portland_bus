@@ -1,0 +1,10 @@
+*.pyc
+private/
+secrets.js
+private/*
+.gitignore
+.idea
+__pycache__
+.DS_Store
+.ipynb_checkpoints
+.ipynb

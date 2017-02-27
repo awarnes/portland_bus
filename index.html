@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <link type='text/css' rel='stylesheet' href='site.css'>
+      <script
+          src="http://code.jquery.com/jquery-3.1.1.min.js"
+          integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+          crossorigin="anonymous">
+      </script>
+  </head>
+  <body>
+      <h1>Nearby TriMet Bus Stops</h1>
+      <form id='query'>
+          <h4>How far away in meters do you want to search?</h4>
+          <input type='number'>
+          <button id='search'>Search!</button>
+      </form>
+      <div id="map"></div>
+      
+      <div id='load' style='font-size: 36pt;'>Loading current location...<img src='hourglass.gif'></div>
+      
+      <section id='output'>
+      
+      </section>
+      <script src='site.js'></script>
+      <script async defer
+         src="https://maps.googleapis.com/maps/api/js?key=API_KEY_HERE&callback=initMap">
+      </script>
+  </body>
+</html>
