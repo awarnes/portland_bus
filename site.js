@@ -1,9 +1,14 @@
+//(function () {
+    
+
 'use strict';
 
 var map;
 var distance;
 var $stops;
-
+var $markers = [];
+    
+    
 // Helper functions for getCurrentLocation:
 function geo_success(position) {
     var userLong = position.coords.longitude.toFixed(4);
@@ -55,10 +60,18 @@ function updateStops($stops, userLong, userLat) {
         var marker = new google.maps.Marker({
           position: stop,
           title: $stops[i]['desc'],
+          animation: google.maps.Animation.DROP
         });
         marker.setMap(map);
         
-        var $lStop = $('<p>').text(i+1 + ": " + " Location: " + $stops[i]['desc'] + " Direction: " + $stops[i]['dir'] + '\n' +" Stop ID: " + $stops[i]['locid']);
+        $markers.push(marker);
+        
+        var $lStop = $('<p>').text(i+1 + ": " + " Location: " + $stops[i]['desc'] + " Direction: " + $stops[i]['dir'] +" Stop ID: " + $stops[i]['locid']);
+        
+        $lStop.data('pos', i);
+        
+        $lStop.on('click', toggleBounce);
+        
         $('#output').append($lStop);
     }
 }
@@ -84,6 +97,20 @@ function getStops (userLat, userLong) {
     });
 }
 
+function toggleBounce() {
+    if ($markers[$(this).data('pos')].getAnimation() !== null) {
+        $markers[$(this).data('pos')].setAnimation(null);
+        $(this).css('background-color', 'white')
+    } else {
+        $markers[$(this).data('pos')].setAnimation(google.maps.Animation.BOUNCE);
+        $(this).css('background-color', 'aliceblue')
+    }
+}
+
+
+
+  
+//})();
 
 // Put a map on the screen centered on Portland, OR
 function initMap() {
