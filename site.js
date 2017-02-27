@@ -1,20 +1,18 @@
-//(function () {
-    
-
 'use strict';
 
 var map;
 var distance;
 var $stops;
 var $markers = [];
+var $userLoc = {lat: 0, lng: 0};
     
     
 // Helper functions for getCurrentLocation:
 function geo_success(position) {
-    var userLong = position.coords.longitude.toFixed(4);
-    var userLat = position.coords.latitude.toFixed(4);
-    console.log(userLat + ' ' + userLong);
-    getStops(userLat, userLong);
+    $userLoc.lng = position.coords.longitude;
+    $userLoc.lat = position.coords.latitude;
+    console.log($userLoc.lat + ' ' + $userLoc.lng);
+    getStops();
 }
 
 function geo_error(position) {
@@ -37,19 +35,19 @@ $('#search').on('click', function(evt){
 
 
 // Update the map with stops in search distance.
-function updateStops($stops, userLong, userLat) {
+function updateStops($stops) {
     $('#load').hide();
-    var userLoc = {lat: Number(userLat), lng: Number(userLong)};
     map = new google.maps.Map(document.getElementById('map'), {
       zoom: 15,
-      center: userLoc
+      center: $userLoc
     });
     
     
     var marker = new google.maps.Marker({
-      position: userLoc,
+      position: $userLoc,
       title: 'You Are Here',
       icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png',
+      draggable: true,
       map: map
     });
     
@@ -72,13 +70,21 @@ function updateStops($stops, userLong, userLat) {
         
         $lStop.on('click', toggleBounce);
         
+        var $getDir = $('<button>').text('Get Directions');
+        
+        $getDir.data('pos', i);
+        
+        $getDir.on('click', getDirs);
+        
+        $lStop.append($getDir);
+        
         $('#output').append($lStop);
     }
 }
 
 // Get a JSON object with all stops within search radius.  
-function getStops (userLat, userLong) {
-    var data = {'ll': userLat+', '+userLong,
+function getStops () {
+    var data = {'ll': $userLoc.lat+', '+$userLoc.lng,
                'json': true,
                'meters': distance,
                'appID': "APP_ID_HERE"}
@@ -89,7 +95,7 @@ function getStops (userLat, userLong) {
         success: function(rsp){
             $stops = rsp;
             console.log($stops)
-            updateStops($stops, userLong, userLat);
+            updateStops($stops);
         },
         error: function(err){
             console.log(err);
@@ -97,6 +103,7 @@ function getStops (userLat, userLong) {
     });
 }
 
+// Toggles the bounce animation on a marker so that user can see what they are looking at.
 function toggleBounce() {
     if ($markers[$(this).data('pos')].getAnimation() !== null) {
         $markers[$(this).data('pos')].setAnimation(null);
@@ -107,10 +114,40 @@ function toggleBounce() {
     }
 }
 
+// Sets up directions to a bus stop.
+function getDirs() {
+    var markerLat = $markers[$(this).data('pos')].position.lat();
+    var markerLng = $markers[$(this).data('pos')].position.lng();
+    
+    var directionsDisplay = new google.maps.DirectionsRenderer;
+    var directionsService = new google.maps.DirectionsService;
+    
+    var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 15,
+        center: $userLoc
+    })
+    directionsDisplay.setMap(map);
+    
+    calculateAndDisplayRoute(directionsService, directionsDisplay, markerLat, markerLng);
+}
 
+// Calculate the walking directions to selected bus stop.
+function calculateAndDisplayRoute(directionsService, directionsDisplay, markerLat, markerLng) {
+    var selectedMode = 'WALKING';
+    directionsService.route({
+        origin: $userLoc,
+        destination: {lat: markerLat, lng: markerLng},
+        travelMode: google.maps.TravelMode[selectedMode]
+    }, function(rsp, status){
+        if (status === 'OK'){
+            directionsDisplay.setDirections(rsp);
+            $('#output').empty();
+        } else {
+            alert('Directions request failed due to ' + status);
+        }
+    });
+}
 
-  
-//})();
 
 // Put a map on the screen centered on Portland, OR
 function initMap() {
