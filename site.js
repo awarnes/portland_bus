@@ -36,6 +36,7 @@ $('#search').on('click', function(evt){
 
 // Update the map with stops in search distance.
 function updateStops($stops) {
+    $('#return').hide();
     $('#load').hide();
     map = new google.maps.Map(document.getElementById('map'), {
       zoom: 15,
@@ -127,6 +128,7 @@ function getDirs() {
         center: $userLoc
     })
     directionsDisplay.setMap(map);
+    directionsDisplay.setPanel(document.getElementById('output'));
     
     calculateAndDisplayRoute(directionsService, directionsDisplay, markerLat, markerLng);
 }
@@ -142,11 +144,17 @@ function calculateAndDisplayRoute(directionsService, directionsDisplay, markerLa
         if (status === 'OK'){
             directionsDisplay.setDirections(rsp);
             $('#output').empty();
+            $('#return').show();
+            $('#return').on('click', function(evt){
+                $('#output').empty();
+                updateStops($stops);
+            });
         } else {
             alert('Directions request failed due to ' + status);
         }
     });
 }
+
 
 
 // Put a map on the screen centered on Portland, OR
@@ -160,4 +168,5 @@ function initMap() {
 
 $(document).ready(function(){
     $('#load').hide();
+    $('#return').hide();
 })
