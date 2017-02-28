@@ -4,6 +4,7 @@ var map;
 var distance;
 var $stops;
 var $buses;
+var $duration;
 var $busMarkers = [];
 var $markers = [];
 var $userLoc = {lat: 0, lng: 0};
@@ -26,7 +27,7 @@ var geo_options = {
     maximumAge: 0,
     timeout: 5000
 }
-
+ 
 
 // Event listener for search button. Gets the user's geolocation and forwards it on.
 $('#search').on('click', function(evt){
@@ -40,6 +41,21 @@ $('#search').on('click', function(evt){
     distance = $('input:first').val();
     navigator.geolocation.getCurrentPosition(geo_success, geo_error, geo_options);
     
+})
+
+// Event listenr
+$('input:first').on('keypress', function (evt) {
+    if (evt.keyCode === 13) {
+        evt.preventDefault();
+        $('#load').show();
+
+        if (window.intervalID !== 'undefined' && window.intervalID !== undefined){
+            window.clearInterval(window.intervalID);
+        }
+
+        distance = $('input:first').val();
+        navigator.geolocation.getCurrentPosition(geo_success, geo_error, geo_options);
+    }
 })
 
 // Update the map with stops (from TriMet) within search distance.
@@ -80,7 +96,9 @@ function updateStops($stops) {
         
         $markers.push(marker);
         
-        var $lStop = $('<p>').text(i+1 + ": " + " Location: " + $stops[i]['desc'] + " Direction: " + $stops[i]['dir'] +" Stop ID: " + $stops[i]['locid']);
+        var $lStop = $('<li>').text(i+1 + ": " + " Location: " + $stops[i]['desc'] + " Direction: " + $stops[i]['dir'] +" Stop ID: " + $stops[i]['locid']);
+        
+        $lStop.addClass('list-group-item');
         
         $lStop.data('pos', i);
         
@@ -93,16 +111,30 @@ function updateStops($stops) {
         $getDir.on('click', getDirs);
         
         var $findBus = $('<button>').text('View Buses');
-        $findBus.data('routes', $routes).css('margin-left', '10px');
+        $findBus.data({'routes': $routes, 'stop': stop}).css('margin-left', '10px');
         $findBus.on('click', findBus);
         
         $lStop.append($getDir);
         $lStop.append($findBus);
+        
+        $lStop.append(' Buses: ');
+        
+        for (let i=0;i<$routes.length;i++){
+            if (i !== $routes.length-1){
+                $lStop.append($routes[i] + ', ');
+            } else {
+                $lStop.append($routes[i]);
+            }
+            
+        }
+       
+        
         $('#output').append($lStop);
     }
 }
 
-// Get a JSON object with all stops within search radius from TriMet.  
+// Get a JSON object with all stops within search radius from TriMet.
+// ****APP_ID**** 
 function getStops () {
     var data = {'ll': $userLoc.lat+', '+$userLoc.lng,
                'json': true,
@@ -180,8 +212,11 @@ function calculateAndDisplayRoute(directionsService, directionsDisplay, markerLa
 }
 
 // Gets bus information for a specific stop and displays it in real time on the map.
+// ****APP_ID****
 function findBus() {
     console.log($(this).data('routes'));
+    
+    var busStop = $(this);
     
     // Remove a previously updating bus route.
     if (window.intervalID !== 'undefined' && window.intervalID !== undefined){
@@ -193,6 +228,21 @@ function findBus() {
     var data = {'routes': routes,
                 'onRouteOnly': true,
                'appID': "APP_ID_HERE"}
+    
+    $.ajax({
+        url: 'https://developer.trimet.org/ws/V2/vehicles',
+        method: 'GET',
+        data: data,
+        success: function(rsp){
+            $buses = rsp;
+            console.log($buses);
+            updateRoutes($buses, busStop.data('stop'));
+        },
+        error: function(err){
+            console.log(err);
+        }  
+    })
+    
     window.intervalID = setInterval(function(){$.ajax({
         url: 'https://developer.trimet.org/ws/V2/vehicles',
         method: 'GET',
@@ -200,7 +250,7 @@ function findBus() {
         success: function(rsp){
             $buses = rsp;
             console.log($buses);
-            updateRoutes($buses);
+            updateRoutes($buses, busStop.data('stop'));
         },
         error: function(err){
             console.log(err);
@@ -211,7 +261,7 @@ function findBus() {
 }
 
 // Displays the buses on the map.
-function updateRoutes($buses){
+function updateRoutes($buses, stopLoc){
     
     $buses = $buses.resultSet.vehicle;
     
@@ -225,12 +275,6 @@ function updateRoutes($buses){
     
     $busMarkers = [];
     
-    
-//    var map = new google.maps.Map(document.getElementById('map'), {
-//        zoom: 13,
-//        center: $userLoc
-//    })
-    
     for (let i=0;i<$buses.length;i++){
         var busPos = {lat: $buses[i].latitude, lng: $buses[i].longitude};
         var busMsg = $buses[i].signMessage;
@@ -240,6 +284,11 @@ function updateRoutes($buses){
           title: busMsg,
           icon: 'https://maps.google.com/mapfiles/ms/icons/bus.png'
         });
+        
+        marker.addListener('click', function (evt){
+            getTime(busPos, marker, stopLoc);
+        })
+        
         $busMarkers.push(marker);
         marker.setMap(map);
     }
@@ -253,6 +302,27 @@ function updateRoutes($buses){
         updateStops($stops);
     });
     
+}
+
+// Gets the time until bus gets to the bus stop.
+function getTime(busPos, marker, stopLoc) {
+    
+    var currentPos = new google.maps.LatLng(busPos.lat, busPos.lng);
+    var stopPos = new google.maps.LatLng(stopLoc.lat, stopLoc.lng);
+    
+    var service = new google.maps.DistanceMatrixService();
+    service.getDistanceMatrix({
+        origins: [currentPos],
+        destinations: [stopPos],
+        travelMode: 'DRIVING'
+    }, parseTimeCallback)
+    console.log($duration);
+}
+
+function parseTimeCallback (rsp, sts) {
+    if (sts === 'OK') {
+        $duration = rsp.rows[0].elements[0].duration.text;
+    }
 }
 
 // Put a map on the screen centered on Portland, OR
