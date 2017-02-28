@@ -43,7 +43,7 @@ $('#search').on('click', function(evt){
     
 })
 
-// Event listenr
+// Event listener to ensure that pressing enter in the text box is handled correctly.
 $('input:first').on('keypress', function (evt) {
     if (evt.keyCode === 13) {
         evt.preventDefault();
@@ -286,7 +286,7 @@ function updateRoutes($buses, stopLoc){
         });
         
         marker.addListener('click', function (evt){
-            getTime(busPos, marker, stopLoc);
+            getTime(this.position, this, stopLoc);
         })
         
         $busMarkers.push(marker);
@@ -305,9 +305,9 @@ function updateRoutes($buses, stopLoc){
 }
 
 // Gets the time until bus gets to the bus stop.
-function getTime(busPos, marker, stopLoc) {
+function getTime(currentPos, marker, stopLoc) {
     
-    var currentPos = new google.maps.LatLng(busPos.lat, busPos.lng);
+//    var currentPos = new google.maps.LatLng(busPos.lat, busPos.lng);
     var stopPos = new google.maps.LatLng(stopLoc.lat, stopLoc.lng);
     
     var service = new google.maps.DistanceMatrixService();
@@ -316,12 +316,19 @@ function getTime(busPos, marker, stopLoc) {
         destinations: [stopPos],
         travelMode: 'DRIVING'
     }, parseTimeCallback)
-    console.log($duration);
+    
+    var infowindow = new google.maps.InfoWindow({
+        content: 'ETA: ' + $duration + '\n (Beta Feature: Use with care!)'
+    })
+    
+    infowindow.open(map, marker);
 }
 
 function parseTimeCallback (rsp, sts) {
     if (sts === 'OK') {
         $duration = rsp.rows[0].elements[0].duration.text;
+    } else {
+        $duration = 'Error: Could not get time.';
     }
 }
 
