@@ -2,29 +2,33 @@
 <html>
   <head>
       <link type='text/css' rel='stylesheet' href='site.css'>
+      
+      <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
       <script
           src="http://code.jquery.com/jquery-3.1.1.min.js"
           integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
           crossorigin="anonymous">
       </script>
   </head>
-  <body>
-      <h1>Nearby TriMet Bus Stops</h1>
-      <form id='query'>
+  <body class='col-sm-12'>
+      <h1 class='page-header'>Nearby TriMet Bus Stops</h1>
+      <div class='col-xs-4'></div>
+      <form id='query' class='col-xs-4' style='margin-bottom: 15px;'>
           <h4>How far away, in meters, do you want to search?</h4>
           <input type='number'>
           <button id='search'>Search!</button>
       </form>
-      <div id="map"></div>
+      <div id="map" class='map-canvas'></div>
       
       <div id='load' style='font-size: 36pt;'>Finding current location...<img src='hourglass.gif'></div>
       <button id='return'>Return</button>
-      <section id='output'>
+      <section id='output' class='jumbotron'>
       
       </section>
       <script src='site.js'></script>
       <script async defer
-         src="https://maps.googleapis.com/maps/api/js?key=API_KEY_HERE&callback=initMap">
+         src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_API_KEY&callback=initMap">
       </script>
   </body>
 </html>
