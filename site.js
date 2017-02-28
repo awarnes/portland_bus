@@ -4,6 +4,7 @@ var map;
 var distance;
 var $stops;
 var $buses;
+var $busMarkers = [];
 var $markers = [];
 var $userLoc = {lat: 0, lng: 0};
     
@@ -31,8 +32,14 @@ var geo_options = {
 $('#search').on('click', function(evt){
     evt.preventDefault();
     $('#load').show();
+    
+    if (window.intervalID !== 'undefined' && window.intervalID !== undefined){
+        window.clearInterval(window.intervalID);
+    }
+    
     distance = $('input:first').val();
     navigator.geolocation.getCurrentPosition(geo_success, geo_error, geo_options);
+    
 })
 
 // Update the map with stops (from TriMet) within search distance.
@@ -101,7 +108,7 @@ function getStops () {
                'json': true,
                'meters': distance,
                'showRoutes': true,
-               'appID': "CE3D8A89C186A82644596B2D5"}
+               'appID': "APP_ID_HERE"}
     $.ajax({
         url: 'https://developer.trimet.org/ws/V1/stops',
         method: 'GET',
@@ -160,6 +167,9 @@ function calculateAndDisplayRoute(directionsService, directionsDisplay, markerLa
             $('#output').empty();
             $('#return').show();
             $('#return').on('click', function(evt){
+                if (window.intervalID !== 'undefined' && window.intervalID !== undefined){
+                    window.clearInterval(window.intervalID);
+                }
                 $('#output').empty();
                 updateStops($stops);
             });
@@ -169,18 +179,21 @@ function calculateAndDisplayRoute(directionsService, directionsDisplay, markerLa
     });
 }
 
-
 // Gets bus information for a specific stop and displays it in real time on the map.
 function findBus() {
     console.log($(this).data('routes'));
     
+    // Remove a previously updating bus route.
+    if (window.intervalID !== 'undefined' && window.intervalID !== undefined){
+        window.clearInterval(window.intervalID);
+    }
     
     var routes = $(this).data('routes').toString();
 
     var data = {'routes': routes,
                 'onRouteOnly': true,
                'appID': "APP_ID_HERE"}
-    var intervalID = setInterval(function(){$.ajax({
+    window.intervalID = setInterval(function(){$.ajax({
         url: 'https://developer.trimet.org/ws/V2/vehicles',
         method: 'GET',
         data: data,
@@ -194,38 +207,29 @@ function findBus() {
         }  
     })}, 5000);
     
+    
 }
-
-//function stoperror () {
-//    return true;
-//}
-//
-//function Interval(f, time) {
-//    var updateBuses = false;
-//    this.start = function() {
-//        if (!this.isRunning()){
-//            updateBuses = setInterval(f, time);
-//        }
-//    };
-//    this.stop = function () {
-//        clearInterval(updateBuses);
-//        updateBuses = false;
-//    };
-//    this.isRunning = function () {
-//        return updateBuses !== false;
-//    }
-//    
-//}
 
 // Displays the buses on the map.
 function updateRoutes($buses){
     
     $buses = $buses.resultSet.vehicle;
     
-    var map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 13,
-        center: $userLoc
-    })
+    for (let i=0;i<$markers.length;i++){
+        $markers[i].setMap(null);
+    }
+    
+    for (let k=0;k<$busMarkers.length;k++){
+        $busMarkers[k].setMap(null);
+    }
+    
+    $busMarkers = [];
+    
+    
+//    var map = new google.maps.Map(document.getElementById('map'), {
+//        zoom: 13,
+//        center: $userLoc
+//    })
     
     for (let i=0;i<$buses.length;i++){
         var busPos = {lat: $buses[i].latitude, lng: $buses[i].longitude};
@@ -236,8 +240,18 @@ function updateRoutes($buses){
           title: busMsg,
           icon: 'https://maps.google.com/mapfiles/ms/icons/bus.png'
         });
+        $busMarkers.push(marker);
         marker.setMap(map);
     }
+    
+    $('#return').show();
+    $('#return').on('click', function(evt){
+        if (window.intervalID !== 'undefined' && window.intervalID !== undefined){
+            window.clearInterval(window.intervalID);
+        }
+        $('#output').empty();
+        updateStops($stops);
+    });
     
 }
 
