@@ -7,6 +7,7 @@ var $buses;
 var $duration;
 var $busMarkers = [];
 var $markers = [];
+var $markerWindows = [];
 var $userLoc = {lat: 0, lng: 0};
     
     
@@ -96,7 +97,29 @@ function updateStops($stops) {
         
         $markers.push(marker);
         
-        var $lStop = $('<li>').text(i+1 + ": " + " Location: " + $stops[i]['desc'] + " Direction: " + $stops[i]['dir'] +" Stop ID: " + $stops[i]['locid']);
+        var content = " Location: " + $stops[i]['desc']
+        
+        content += ' | Buses: ';
+        
+        for (let i=0;i<$routes.length;i++){
+            if (i !== $routes.length-1){
+                content += $routes[i] + ', ';
+            } else {
+                content += $routes[i];
+            }  
+        }
+        
+        var infowindow = new google.maps.InfoWindow({
+            content: content
+        })
+        
+        $markerWindows.push(infowindow);
+            
+        marker.addListener('click', function (evt){
+            $markerWindows[i].open(map, this);
+        })
+        
+        var $lStop = $('<li>').text(i+1 + ": " + " Location: " + $stops[i]['desc'] + " | Direction: " + $stops[i]['dir'] +" | Stop ID: " + $stops[i]['locid']);
         
         $lStop.addClass('list-group-item');
         
@@ -106,18 +129,18 @@ function updateStops($stops) {
         
         var $getDir = $('<button>').text('Get Directions');
         
-        $getDir.data('pos', i).css('margin-left', '10px');
+        $getDir.data('pos', i).css('margin-left', '10px').addClass('pull-right');
         
         $getDir.on('click', getDirs);
         
-        var $findBus = $('<button>').text('View Buses');
+        var $findBus = $('<button>').text('View Buses').addClass('pull-right');
         $findBus.data({'routes': $routes, 'stop': stop}).css('margin-left', '10px');
         $findBus.on('click', findBus);
         
         $lStop.append($getDir);
         $lStop.append($findBus);
         
-        $lStop.append(' Buses: ');
+        $lStop.append(' | Buses: ');
         
         for (let i=0;i<$routes.length;i++){
             if (i !== $routes.length-1){
